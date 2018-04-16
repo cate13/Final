@@ -1,0 +1,130 @@
+<template>
+  <nav>
+    <ul id="menu">
+      <li class="logo" v-if="loggedIn">Rate Our Professor</li>
+      <li class="logout" v-if="loggedIn"><a @click="logout" href="#">Logout</a></li>
+      <li class="logout" v-if="loggedIn">{{user.username}}</li>
+      <form v-else class="right" v-on:submit.prevent="login">
+	<input v-model="email" placeholder="Email Address">
+	<input v-model="password" placeholder="Password">
+	<button class="primary" type="submit">Login</button>
+      </form>
+    </ul>
+    <div class="flexWrapper errorPlace">
+      <p v-if="loginError" class="flexRight error">{{loginError}}</p>
+    </div>
+  </nav>
+</template>
+
+<script>
+ export default {
+   name: 'AppHeader',
+   data () {
+     return {
+       email: '',
+       password: '',
+     }
+   },
+   computed: {
+     user: function() {
+       return this.$store.getters.user;
+     },
+     loggedIn: function() {
+       return this.$store.getters.loggedIn;
+     },
+     loginError: function() {
+       return this.$store.getters.loginError;
+     },
+   },
+   methods: {
+     login: function() {
+       this.$store.dispatch('login',{
+         email: this.email,
+         password: this.password,
+       }).then(user => {
+	 this.email = '';
+	 this.password = '';
+       });
+     },
+     logout: function() {
+       this.$store.dispatch('logout');
+     }
+   }
+ }
+</script>
+
+<style scoped>
+
+nav {
+  display: grid;
+  margin-bottom: 20px;
+}
+ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  background-color: white;
+  padding: 5px;
+  font-family: 'Secular One', sans-serif;
+  border-style: solid;
+  border-width: 7px;
+  border-color: #ff5722;
+  width: 40%;
+  float: right;
+}
+li {
+  display: inline-block;
+  margin-right: 20px;
+  height: 50px;
+  text-align: center;
+  line-height: 50px;
+  
+}
+form {
+  float: right;
+}
+
+button {
+    background-color: #ff5722;
+    border-style: solie;
+    border-width: 3px;
+    border-color: #9e9e9e;
+    padding: 5px 10px;
+    color: white;
+    display: inline-block;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: 'Secular One', sans-serif;
+}
+
+input {
+  height: 27.5px;
+  width: 180px;
+}
+
+.right {
+  float: right;
+}
+ 
+a {
+     color: black;
+}
+
+.logo {
+  color: #ff5722;
+  font-family: 'Secular One', sans-serif;
+  font-size: 21px;
+}
+
+.logout {
+  float: right;
+}
+
+@media screen and (max-width : 760px) {
+ input {
+  height: 27.5px;
+  width: 70px;
+}
+}
+</style>
+
