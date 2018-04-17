@@ -2,7 +2,7 @@
   <div id="app">
     <app-header/>
     <router-view/>
-    <div class="footer"><a href="https://github.com/cate13/CreativeProject4">GitHub Link</a></div>
+    <div class="footer"><a href="https://github.com/cate13/Final">GitHub Link</a></div>
   </div>
 </template>
 

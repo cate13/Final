@@ -17,6 +17,28 @@ const knex = require('knex')(config);
 let bcrypt = require('bcrypt');
 const saltRounds = 10;
 
+const jwt = require('jsonwebtoken');
+let jwtSecret = process.env.jwtSecret;
+
+if (jwtSecret === undefined) {
+  console.log("You need to define a jwtSecret environment variable to continue.");
+  knex.destroy();
+  process.exit();
+}
+
+const verifyToken = (req, res, next) => {
+  const token = req.headers['authorization'];
+  if (!token)
+    return res.status(403).send({ error: 'No token provided.' });
+  jwt.verify(token, jwtSecret, function(err, decoded) {
+    if (err)
+      return res.status(500).send({ error: 'Failed to authenticate token.' });
+    // if everything good, save to request for use in other routes
+    req.userID = decoded.id;
+    next();
+  });
+}
+
 app.post('/api/login', (req, res) => {
     if (!req.body.email || !req.body.password)
       return res.status(400).send();
@@ -27,9 +49,14 @@ app.post('/api/login', (req, res) => {
       }
       return [bcrypt.compare(req.body.password, user.hash),user];
     }).spread((result,user) => {
-      if (result)
-        res.status(200).json({user:{username:user.username,name:user.name,id:user.id}});
-      else
+      if (result) {
+        let token = jwt.sign({ id: user.id }, jwtSecret, {
+        expiresIn: 86400 // expires in 24 hours
+      });
+        res.status(200).json({user:{username:user.username,name:user.name,id:user.id},token:token});
+      } else {
+        res.status(403).send("Invalid credentials");
+      }
         res.status(403).send("Invalid credentials");
       return;
     }).catch(error => {
@@ -61,7 +88,11 @@ app.post('/api/login', (req, res) => {
     }).then(ids => {
       return knex('users').where('id',ids[0]).first().select('username','name','id');
     }).then(user => {
-      res.status(200).json({user:user});
+      
+      let token = jwt.sign({ id: user.id }, jwtSecret, {
+        expiresIn: 86400 // expires in 24 hours
+      });
+      res.status(200).json({user:user,token:token});
       return;
     }).catch(error => {
       if (error.message !== 'abort') {
@@ -101,8 +132,12 @@ app.post('/api/login', (req, res) => {
       });
   });
 
-  app.post('/api/users/:id/comments', (req, res) => {
+  app.post('/api/users/:id/comments', verifyToken, (req, res) => {
     let id = parseInt(req.params.id);
+    if (id !== req.userID) {
+      res.status(403).send();
+      return;
+    }
     knex('users').where('id',id).first().then(user => {
       return knex('comments').insert({user_id: id, comment:req.body.comment, created: new Date()});
     }).then(ids => {
